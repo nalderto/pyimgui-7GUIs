@@ -7,6 +7,11 @@ import OpenGL.GL as gl
 from imgui.integrations.glfw import GlfwRenderer
 
 
+class Person:
+    def __init__(self, first_name, last_name):
+        self.first_name = first_name
+        self.last_name = last_name
+
 def validate_date(date_str):
     try:
         return datetime.datetime.strptime(date_str, "%m.%d.%Y")
@@ -25,6 +30,11 @@ def main():
     flight_current = 0
     start_date = "01.01.1970"
     end_date = start_date 
+    crud_selected = [False, False, False]
+    crud_names = [Person("Steven", "Tyler"), Person("Tom", "Hamilton"), Person("Joey", "Kramer")]
+    crud_filter_text = ""
+    crud_first_name_text = ""
+    crud_last_name_text = ""
 
     while not glfw.window_should_close(window):
         glfw.poll_events()
@@ -127,6 +137,63 @@ def main():
 
 
         # END FLIGHT BOOKER
+        imgui.end()
+
+
+
+        imgui.begin('CRUD')
+        imgui.text("Filter prefix:")
+        imgui.same_line()
+        _, crud_filter_text = imgui.input_text('##crud_filter', crud_filter_text, 999)
+        imgui.text("Name:")
+        imgui.same_line()
+        _, crud_first_name_text = imgui.input_text("##crud_first_name", crud_first_name_text, 100)
+        imgui.text("Surname:")
+        imgui.same_line()
+        _, crud_last_name_text = imgui.input_text("##crud_last_name", crud_last_name_text, 100)
+
+
+        name_format = "{}, {}"
+        for i in range(len(crud_names)):
+            if crud_filter_text == crud_names[i].last_name[:len(crud_filter_text)]:
+                _, crud_selected[i] = imgui.selectable(name_format.format(crud_names[i].last_name, crud_names[i].first_name), crud_selected[i])
+            else:
+                # anything not displayed should not be selected
+                crud_selected[i] = False
+
+        if imgui.button("Create"):
+            crud_names.append(Person(crud_first_name_text, crud_last_name_text))
+            crud_selected.append(False)
+            crud_first_name_text = ""
+            crud_last_name_text = ""
+        imgui.same_line()
+
+
+        if not True in crud_selected:
+            # no element selected
+            imgui.text("Update")
+            imgui.same_line()
+            imgui.text("Delete")
+        else: 
+            if imgui.button("Update"):
+                for i in range(len(crud_selected)):
+                    if crud_selected[i]:
+                        crud_names[i].first_name = crud_first_name_text
+                        crud_names[i].last_name = crud_last_name_text
+                        crud_first_name_text = ""
+                        crud_last_name_text = ""
+            imgui.same_line()
+            if imgui.button("Delete"):
+                for i in range(len(crud_selected)):
+                    if crud_selected[i]:
+                        crud_names.pop(i)
+                        crud_selected.pop(i)
+                        crud_first_name_text = ""
+                        crud_last_name_text = ""
+                        break
+        
+
+
         imgui.end()
 
         gl.glClearColor(1., 1., 1., 1)
