@@ -215,18 +215,23 @@ def main():
             power=1.0
             )
 
-        #def countdown(var):
-        #    while var > 1:
-        #        var -= 1
-                #time.sleep(1)
+        def countdown(t): 
+            while t: 
+                mins, secs = divmod(t, 60) 
+                timer = '{:02f}:{:02f}'.format(mins, secs) 
+                #print(timer, end="\r")
+                imgui.text(timer)
+                time.sleep(1) 
+                t -= 1
 
         if changed:
+            #countdown(value)
             timer = value
-            timer -= 1
+            #timer -= 1
             #temp = timer * 10000
-            #while temp > 0:
-            #    if (temp % 1000 == 0):
-            #        timer -= 1
+            while timer > 0:
+                timer -=1
+                time.sleep(1)
         
         
         if imgui.button("Reset"):
