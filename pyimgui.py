@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
-
+import time, threading
 import glfw
 import imgui
 import OpenGL.GL as gl
@@ -35,6 +35,12 @@ def main():
     crud_filter_text = ""
     crud_first_name_text = ""
     crud_last_name_text = ""
+
+    timer = 0
+    xSize = 0
+    ySize = 0
+    fraction = .35
+    value = 30
 
     while not glfw.window_should_close(window):
         glfw.poll_events()
@@ -191,10 +197,43 @@ def main():
                         crud_first_name_text = ""
                         crud_last_name_text = ""
                         break
-        
-
 
         imgui.end()
+
+        imgui.begin('Timer')
+        #imgui.text('Elapsed Time:')
+        #imgui.same_line()
+        #imgui.text('Bar thing')
+        #imgui.progress_bar(fraction, xSize, ySize)
+        imgui.text(str(timer) + 's')
+        imgui.text('Duration:')
+        imgui.same_line()
+        changed, value = imgui.slider_float(
+            "", value,
+            min_value=0.0, max_value=60.0,
+            format="%.0f",
+            power=1.0
+            )
+
+        #def countdown(var):
+        #    while var > 1:
+        #        var -= 1
+                #time.sleep(1)
+
+        if changed:
+            timer = value
+            timer -= 1
+            #temp = timer * 10000
+            #while temp > 0:
+            #    if (temp % 1000 == 0):
+            #        timer -= 1
+        
+        
+        if imgui.button("Reset"):
+            timer = 0
+            value = 30
+        imgui.end()
+
 
         gl.glClearColor(1., 1., 1., 1)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
