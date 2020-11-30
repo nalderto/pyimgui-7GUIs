@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import datetime
-
+import time, threading
 import glfw
 import imgui
 import OpenGL.GL as gl
 from imgui.integrations.glfw import GlfwRenderer
 import math
+
+import time
 
 
 class Person:
@@ -70,24 +72,38 @@ def main():
     window = impl_glfw_init()
     impl = GlfwRenderer(window)
 
+    # Counter Variables
     counter = 0
+
+    # Temperature Converter 
     tempC = 0
     tempF = 32
 
+    # Flight Booker Variables
     flight_current = 0
     start_date = "01.01.1970"
-    end_date = start_date 
+    end_date = start_date
+
+    # CRUD Variables
     crud_selected = [False, False, False]
     crud_names = [Person("Steven", "Tyler"), Person("Tom", "Hamilton"), Person("Joey", "Kramer")]
     crud_filter_text = ""
     crud_first_name_text = ""
     crud_last_name_text = ""
+
+    # MVP Variables
     show_mvp_window = False
+
+    # Circle Variables
     circle_list = []
     colored_circle = None
     colored_circle_size = 0
     show_circle_slider = False
     undo_list = CircleList()
+
+    # Timer Variables
+    start_time = time.perf_counter()
+    timer_length = 30
 
     while not glfw.window_should_close(window):
         glfw.poll_events()
@@ -108,15 +124,16 @@ def main():
                 imgui.end_menu()
             imgui.end_main_menu_bar()
 
+        # BEGIN COUNTER
         imgui.begin("Counter")
         imgui.text(str(counter))
         imgui.same_line(spacing=50)
         if imgui.button("Count"):
             counter += 1
         imgui.end()
+        # END COUNTER
 
-
-        imgui.set_next_window_position(200, 60)
+        # BEGIN TEMPCONV
         imgui.set_next_window_size(275, 55)
         imgui.begin("TempConv")
         imgui.push_item_width(50)
@@ -135,9 +152,10 @@ def main():
             tempC = round(((tempF - 32) / (9/5)), 1)
 
         imgui.end()
+        # END TEMPCONV
         
-
-
+        # BEGIN FLIGHT BOOKER
+        imgui.set_next_window_size(250, 150)
         imgui.begin("Flight Booker")
         num_pops = 0
 
@@ -188,12 +206,10 @@ def main():
                 imgui.text("You booked a flight for " + start_date_date.strftime("%m.%d.%Y") + " and a return flight on " + end_date_date.strftime("%m.%d.%Y")+".")
             imgui.end_popup()
 
-
-        # END FLIGHT BOOKER
         imgui.end()
+        # END FLIGHT BOOKER
 
-
-
+        # BEGIN TIMER
         imgui.begin('CRUD')
         imgui.text("Filter prefix:")
         imgui.same_line()
@@ -244,12 +260,33 @@ def main():
                         crud_first_name_text = ""
                         crud_last_name_text = ""
                         break
-        
-
 
         imgui.end()
-
         # END CRUD
+
+        # BEGIN TIMER
+        imgui.begin('Timer')
+        
+        elapsed_time = round((time.perf_counter() - start_time), 1)
+        if elapsed_time < 0:
+            elapsed_time = 0
+
+        imgui.text('Elapsed Time:')
+        imgui.same_line()
+        imgui.progress_bar(elapsed_time / timer_length, (100, 20))
+        imgui.text(str(elapsed_time) + 's')
+        changed, timer_length = imgui.slider_float(
+            "", timer_length,
+            min_value=1.0, max_value=60.0,
+            format="%.0f",
+            power=1.0
+            )
+        
+        if imgui.button("Reset"):
+            start_time = time.perf_counter()
+        imgui.end()
+        # END TIMER
+        
 
         # MVP
         imgui.begin("MVP")
