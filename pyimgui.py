@@ -72,25 +72,36 @@ def main():
     window = impl_glfw_init()
     impl = GlfwRenderer(window)
 
+    # Counter Variables
     counter = 0
+
+    # Temperature Converter 
     tempC = 0
     tempF = 32
 
+    # Flight Booker Variables
     flight_current = 0
     start_date = "01.01.1970"
-    end_date = start_date 
+    end_date = start_date
+
+    # CRUD Variables
     crud_selected = [False, False, False]
     crud_names = [Person("Steven", "Tyler"), Person("Tom", "Hamilton"), Person("Joey", "Kramer")]
     crud_filter_text = ""
     crud_first_name_text = ""
     crud_last_name_text = ""
+
+    # MVP Variables
     show_mvp_window = False
+
+    # Circle Variables
     circle_list = []
     colored_circle = None
     colored_circle_size = 0
     show_circle_slider = False
     undo_list = CircleList()
 
+    # Timer Variables
     start_time = time.perf_counter()
     timer_length = 30
 
@@ -143,6 +154,8 @@ def main():
         imgui.end()
         # END TEMPCONV
         
+        # BEGIN FLIGHT BOOKER
+        imgui.set_next_window_size(250, 150)
         imgui.begin("Flight Booker")
         num_pops = 0
 
