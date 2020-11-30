@@ -5,12 +5,59 @@ import glfw
 import imgui
 import OpenGL.GL as gl
 from imgui.integrations.glfw import GlfwRenderer
+import math
 
 
 class Person:
     def __init__(self, first_name, last_name):
         self.first_name = first_name
         self.last_name = last_name
+
+# Types
+#   "DRAW": 
+#       "Undo": Remove circle from list at index
+#       "Redo": Add circle to list size x, y and radius radius
+#   "RESIZE":
+#       "Undo": Set size to old_r
+#       "Redo": Set size to r
+
+class CircleEvent:
+    def __init__(self, action, index, radius = 0, old_radius = 0, x = 0, y = 0):
+        self.action = action
+        self.index = index
+        self.radius = radius
+        self.x = x
+        self.y = y
+        self.old_radius = old_radius
+        self.next = None
+        self.prev = None
+
+class CircleList:
+    def __init__(self):
+        self.undo_head = CircleEvent("HEAD", -1)
+        self.undo_tail = self.undo_head
+
+    def add_event(self, action, index, radius = 0, old_radius = 0, x = 0, y = 0):
+        e = CircleEvent(action, index, radius = radius, old_radius = old_radius, x = x, y = y)
+    
+        self.undo_tail.next = e
+        e.prev = self.undo_tail
+        self.undo_tail = self.undo_tail.next
+    
+    def undo(self):
+        if self.undo_tail == self.undo_head:
+            return None
+        
+        ret = self.undo_tail
+        self.undo_tail = self.undo_tail.prev
+        return ret
+    
+    def redo(self):
+        if self.undo_tail.next is None:
+            return None
+
+        self.undo_tail = self.undo_tail.next
+        return self.undo_tail
 
 def validate_date(date_str):
     try:
@@ -35,6 +82,12 @@ def main():
     crud_filter_text = ""
     crud_first_name_text = ""
     crud_last_name_text = ""
+    show_mvp_window = False
+    circle_list = []
+    colored_circle = None
+    colored_circle_size = 0
+    show_circle_slider = False
+    undo_list = CircleList()
 
     while not glfw.window_should_close(window):
         glfw.poll_events()
@@ -196,6 +249,87 @@ def main():
 
         imgui.end()
 
+        # END CRUD
+
+        # MVP
+        imgui.begin("MVP")
+
+        if imgui.button("Click me!"):
+            show_mvp_window = True
+
+        imgui.end()
+
+        if show_mvp_window:
+            imgui.begin("Successful click!")
+            imgui.text("Congratulations, this was much easier in Python than React Native")
+            if imgui.button("Close Me"):
+                show_mvp_window = False
+            imgui.end()
+        # END MVP
+
+        #CIRCLES
+        imgui.begin("Circle")
+
+        if imgui.button("Redo"):
+            e = undo_list.redo()
+            if e is not None:
+                if e.action == "DRAW":
+                    circle_list.insert(e.index, {"pos": (e.x, e.y), "filled": 0, "r": e.radius})
+                else:
+                    circle_list[e.index]["r"] = e.radius
+
+        if imgui.button("Undo"):
+            e = undo_list.undo()
+            if e is not None:
+                if e.action == "DRAW":
+                    if circle_list[e.index] == colored_circle:
+                        colored_circle = None
+                        colored_circle_size = 0
+                    circle_list.pop(e.index)
+                else:
+                    circle_list[e.index]["r"] = e.old_radius
+
+        draw_list = imgui.get_window_draw_list()
+        io = imgui.get_io()
+        pos = io.mouse_pos
+
+        if imgui.is_mouse_clicked(0) and imgui.is_window_hovered():
+            dist = float('inf')
+
+            for circle in circle_list:
+                dist_to_click = math.sqrt((circle["pos"][0] - pos[0]) ** 2 + (circle["pos"][1] - pos[1]) ** 2)
+                if dist_to_click < dist and dist_to_click > circle["r"]:
+                    colored_circle = circle
+                    colored_circle_size = circle["r"]
+                    dist = dist_to_click
+
+            circle_list.append({"pos": pos, "filled": 0, "r": 20})
+            undo_list.add_event("DRAW", len(circle_list) - 1, radius = 20, x = pos[0], y = pos[1])
+
+        if imgui.is_mouse_clicked(1) and colored_circle is not None:
+            show_circle_slider = True
+            
+        for circle in circle_list:
+            if circle != colored_circle:
+                draw_list.add_circle(circle["pos"][0], circle["pos"][1], circle["r"], imgui.get_color_u32_rgba(1,1,0,1), thickness=3)
+            else:
+                draw_list.add_circle_filled(circle["pos"][0], circle["pos"][1], circle["r"], imgui.get_color_u32_rgba(1,1,0,1))
+
+        imgui.end()
+
+        if show_circle_slider:
+            x = colored_circle["pos"][0]
+            y = colored_circle["pos"][1]
+            imgui.begin(f"Adjust diameter of circle")
+            _, rad = imgui.slider_int("Radius", colored_circle["r"], 0, 100, format = "%d")
+            colored_circle["r"] = rad
+            if imgui.button("Close"):
+                show_circle_slider = False
+                undo_list.add_event("RESIZE", circle_list.index(colored_circle), radius = rad, old_radius = colored_circle_size)
+                colored_circle_size = rad
+            imgui.end()
+        #END CIRCLES
+        
         gl.glClearColor(1., 1., 1., 1)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
@@ -234,7 +368,6 @@ def impl_glfw_init():
         exit(1)
 
     return window
-
 
 if __name__ == "__main__":
     main()
