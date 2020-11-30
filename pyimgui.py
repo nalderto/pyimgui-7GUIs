@@ -6,6 +6,8 @@ import imgui
 import OpenGL.GL as gl
 from imgui.integrations.glfw import GlfwRenderer
 
+import time
+
 
 class Person:
     def __init__(self, first_name, last_name):
@@ -36,11 +38,8 @@ def main():
     crud_first_name_text = ""
     crud_last_name_text = ""
 
-    timer = 0
-    xSize = 0
-    ySize = 0
-    fraction = .35
-    value = 30
+    start_time = time.perf_counter()
+    timer_length = 30
 
     while not glfw.window_should_close(window):
         glfw.poll_events()
@@ -201,42 +200,24 @@ def main():
         imgui.end()
 
         imgui.begin('Timer')
-        #imgui.text('Elapsed Time:')
-        #imgui.same_line()
-        #imgui.text('Bar thing')
-        #imgui.progress_bar(fraction, xSize, ySize)
-        imgui.text(str(timer) + 's')
-        imgui.text('Duration:')
+        
+        elapsed_time = round((time.perf_counter() - start_time), 1)
+        if elapsed_time < 0:
+            elapsed_time = 0
+
+        imgui.text('Elapsed Time:')
         imgui.same_line()
-        changed, value = imgui.slider_float(
-            "", value,
-            min_value=0.0, max_value=60.0,
+        imgui.progress_bar(elapsed_time / timer_length, (100, 20))
+        imgui.text(str(elapsed_time) + 's')
+        changed, timer_length = imgui.slider_float(
+            "", timer_length,
+            min_value=1.0, max_value=60.0,
             format="%.0f",
             power=1.0
             )
-
-        def countdown(t): 
-            while t: 
-                mins, secs = divmod(t, 60) 
-                timer = '{:02f}:{:02f}'.format(mins, secs) 
-                #print(timer, end="\r")
-                imgui.text(timer)
-                time.sleep(1) 
-                t -= 1
-
-        if changed:
-            #countdown(value)
-            timer = value
-            #timer -= 1
-            #temp = timer * 10000
-            while timer > 0:
-                timer -=1
-                time.sleep(1)
-        
         
         if imgui.button("Reset"):
-            timer = 0
-            value = 30
+            start_time = time.perf_counter()
         imgui.end()
 
 
