@@ -6,8 +6,7 @@ import imgui
 import OpenGL.GL as gl
 from imgui.integrations.glfw import GlfwRenderer
 import math
-
-import time
+import re
 
 
 class Person:
@@ -67,6 +66,27 @@ def validate_date(date_str):
     except ValueError:
         return None
 
+def calculate_cell_sum(eq, cells):
+    res = re.search("\(([A-Z][0-9]+):([A-Z][0-9]+)\)", eq)
+    c1 = res.group(1)
+    c2 = res.group(2)
+
+    start_j = ord(c1[0]) - ord('A')
+    start_i = int(c1[1:])
+
+    end_j = ord(c2[0]) - ord('A')
+    end_i = int(c2[1:])
+
+    s = 0
+    for i in range(start_i, end_i + 1):
+        for j in range(start_j, end_j + 1):
+            try:
+                s += int(cells[i][j]["val"])
+            except:
+                s += 0
+
+    return s
+
 def main():
     imgui.create_context()
     window = impl_glfw_init()
@@ -104,6 +124,17 @@ def main():
     # Timer Variables
     start_time = time.perf_counter()
     timer_length = 30
+
+    # Cells Variables
+    cells = []
+    ROWS = 100
+    COLS = 26
+    sum_reg = re.compile("SUM\([A-Z][0-9]+:[A-Z][0-9]+\)")
+
+    for r in range(ROWS):
+        cells.append([])
+        for c in range(COLS):
+            cells[r].append({"formula": None, "val": str(0)})
 
     while not glfw.window_should_close(window):
         glfw.poll_events()
@@ -366,6 +397,42 @@ def main():
                 colored_circle_size = rad
             imgui.end()
         #END CIRCLES
+
+        #CELLS
+
+        imgui.begin("Cells", flags = imgui.WINDOW_HORIZONTAL_SCROLLING_BAR)
+
+        imgui.begin_group()
+
+        for r in range(ROWS):
+            for c in range(ord('A') - 1, ord('Z') + 1):
+                imgui.push_item_width(100)
+                if r == 0 and c >= ord('A'):
+                    imgui.input_text(f'##{c}{r}', chr(c), 20, flags = imgui.INPUT_TEXT_READ_ONLY)
+                elif c == ord('A') - 1:
+                    imgui.input_text(f'##{c}{r}', str(r), 20, flags = imgui.INPUT_TEXT_READ_ONLY)
+                else:
+                    changed, cells[r][c - ord('A')]["val"] = imgui.input_text(f'##{c}{r}', str(cells[r][c - ord('A')]["val"]), 20)
+                    s = sum_reg.match(cells[r][c - ord('A')]["val"])
+
+                    if s != None:
+                        cells[r][c - ord('A')]["formula"] = s.group()
+                    
+                    if changed:
+                        cells[r][c - ord('A')]["formula"] = None
+
+                    if cells[r][c - ord('A')]["formula"] != None:
+                        cells[r][c - ord('A')]["val"] = calculate_cell_sum(cells[r][c - ord('A')]["formula"], cells)
+
+                imgui.pop_item_width()
+                if c < ord('Z'):
+                    imgui.same_line()
+        
+        imgui.end_group()
+
+        imgui.end()
+
+        #END CELLS
         
         gl.glClearColor(1., 1., 1., 1)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
